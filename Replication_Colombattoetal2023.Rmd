@@ -1,0 +1,64 @@
+---
+title: 'Replication of Colombatto et al. (2023): Vaccine Nationalism Counterintuitively
+  Erodes Public Trust in Leaders'
+author: "Zhipei Wang & Jonathan Koop"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Preparations
+## 1.1 Loading Required Packages
+```{r}
+library(pacman)
+p_load("tidyverse")
+```
+
+## 1.2 Reading in the Data
+```{r}
+data_s1 <- read.csv("S1 - Data.csv")
+```
+
+# 2. Data Wrangling
+```{r}
+factors <- c("att_check1", "att_check2")
+data_s1$gender <- as.factor(data_s1$gender)
+
+data_s1_sample <- data_s1 %>%
+  # exclude individuals who took the survey more than once (either duplicate id or ip, not specified but 46x IP==1)
+  filter(duplicate_IP != 1,
+         att_check1 == "TikTok",
+         att_check2 == "Roses can suffer with pests like aphids and blackfly",
+         country == survey_c,
+         comp_check == "How much I trusted the mayor") %>%
+  
+  # Dependent Variable Avg of both trust questions
+  mutate(trust_comb = (trust_1 + trust_2)/2,
+         gender = as.factor(gender),
+         race = if_else(race == "White", "White", "Other"), # coding of race not specified in paper
+         education = as.factor(education),
+         country = as.factor(country))
+
+         
+```
+
+# 3. Descriptives
+```{r}
+table(data_s1$att_check1 == "TikTok" & data_s1$att_check2 == "Roses can suffer with pests like aphids and blackfly") # 172 failed first attention check
+table(data_s1$att_check2 == "Roses can suffer with pests like aphids and blackfly") # 172 failed first attention check
+
+nas_pp <- rowSums(is.na(data_s1_sample))
+table(nas_pp) # 1 person had 2 NAs
+
+table(data_s1_sample$gender) # 8686 women as in paper
+mean(data_s1_sample$age) # 41.62 as in paper
+```
+```{r}
+model <- lm(trust_comb ~ gender + age + race + education + ses2 + politics + religious + support + country, data = data_s1_sample)
+
+summary(model)
+```
+
