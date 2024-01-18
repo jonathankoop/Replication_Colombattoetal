@@ -10,23 +10,114 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+This Rmd-file aims to replicate the findings from Colombatto et al. (2022) who published the finding people in Australia, Canada, the United Kingdom and the United States counterintuitively trusted leaders with redistributive policies more than those with such that are of nationalistic nature. They mention to have conducted seven experiments with a total of $N=4,215$ adults leading to these findings. These experiments varied concerning their design, with nationally representative samples, expert and non-expert forecasts, and studies examining trust in the context of different diseases such as COVID-19 and H5N1 avian influenza.
+
+In this project, we aim to replicate the author's finding.
+
 # 1. Preparations
+
 ## 1.1 Loading Required Packages
+
 ```{r}
 library(pacman)
-p_load("tidyverse")
+p_load("tidyverse", "knitr")
 ```
 
-## 1.2 Reading in the Data
+## 1.2 Loading the Data
+
 ```{r}
-data_s1 <- read.csv("S1 - Data.csv")
+data_s1 <- read.csv("Data/S1 - Data.csv")
+data_s2 <- read.csv("Data/S2 - Data.csv")
 ```
 
-# 2. Data Wrangling
-```{r}
-factors <- c("att_check1", "att_check2")
-data_s1$gender <- as.factor(data_s1$gender)
+# 2. Study 1
 
+## 2.1 Descriptive Statistics
+
+### 2.1.1 Sample Size
+
+According to Colombatto et al. (2023), 2,000 participants were recruited with 500 from each country. More precise numbers are not given.
+
+```{r}
+participants <- data_s1 %>%
+  filter(duplicate_IP != 1) %>% # remove duplicate cases
+  group_by(country) %>% # group data by region
+  summarize(participants = n())
+
+kable(participants)
+```
+
+Summarizing the given data set, excluding duplicate entries, at first sight show that this is quite plausible as the number of participants lie near 500 for all countries. At a second sight, however, it appears that `r participants$participants[participants$country == "Canada"]` of the participants lived in Canada which is higher than the authors mentioned. A plausible explanation for this may be that some of the participants recruited for some other counties (in particular the United States) may have moved to Canada.
+
+### 2.1.2 Excluded Respondents
+
+Next, the authors mention that based on multiple criteria outlined and checked below:
+
+*(1) 46 respondents for taking the survey more than once*
+
+```{r}
+excluded_morethanonce <- data_s1 %>%
+  filter(duplicate_IP == 1)
+
+nrow(excluded_morethanonce)
+```
+
+This alligns with the data.
+
+*(2) 245 respndents for failing one or both attention checks*
+
+```{r}
+excluded_attcheck <- data_s1 %>%
+  filter(duplicate_IP != 1) %>%
+  filter(att_check1 != "TikTok" |
+         att_check2 != "Roses can suffer with pests like aphids and blackfly")
+
+nrow(excluded_attcheck)
+```
+
+Excluding duplicate entries, this also alligns with the given data.
+
+*(3) 2 respondents reported living in another country than Australia, Canada, the United Kingdom, and the United States*
+
+```{r}
+excluded_country <- data_s1 %>%
+  filter(duplicate_IP != 1) %>%
+  filter(country == "Other")
+
+nrow(excluded_country)
+```
+
+This alligns with the data as well.
+
+*(4) 101 failed a comprehension check*
+
+```{r}
+excluded_compcheck1 <- data_s1 %>%
+  filter(duplicate_IP != 1) %>%
+  filter(comp_check != "How much I trusted the mayor")
+
+nrow(excluded_compcheck1)
+```
+
+Out of all non-duplicate entries, the code above shows that `r nrow(excluded_compcheck1)` respondents failed the attention check, which does not allign with the number given by the authors. However, it is also plausible that the authors referred to respondents who were not removed for other reasons listed before (i.e., (1) to (3)).
+
+```{r}
+excluded_compcheck2 <- data_s1 %>%
+  filter(duplicate_IP != 1,
+         att_check1 == "TikTok",
+         att_check2 == "Roses can suffer with pests like aphids and blackfly",
+         country == survey_c,
+         comp_check != "How much I trusted the mayor")
+
+nrow(excluded_compcheck2)
+```
+
+This way leads to the provided 101 respondents.
+
+### 2.1.3 Characteristics of the Analysis Sample
+
+Following this specification, we exclude these individuals from the sample through `dplyr`'s `filter` function 
+```{r}
 data_s1_sample <- data_s1 %>%
   # exclude individuals who took the survey more than once (either duplicate id or ip, not specified but 46x IP==1)
   filter(duplicate_IP != 1,
@@ -36,29 +127,281 @@ data_s1_sample <- data_s1 %>%
          comp_check == "How much I trusted the mayor") %>%
   
   # Dependent Variable Avg of both trust questions
-  mutate(trust_comb = (trust_1 + trust_2)/2,
-         gender = as.factor(gender),
-         race = if_else(race == "White", "White", "Other"), # coding of race not specified in paper
+  mutate(trust_comb = (trust_1 + trust_2)/2, # form trust score as avg of both trust items
+         cond = as.factor(cond),
+         gender = as.factor(gender), # make gender a factor variable
+         race = as.factor(race),
          education = as.factor(education),
          country = as.factor(country))
 
-         
+table(data_s2_sample$gender)  
+mean(data_s2_sample$age, na.rm = TRUE)
 ```
 
-# 3. Descriptives
+
+## 2.2 Regression Analysis
+
+Next, we ran the regression analysis with all the control variables mentioned by the authors. Unfortunately, no information was given about how these variables were recoded.
+
+Colombatto et al. published several regression analyses for the first study, which will be went through followingly step by step:
+
+*(1) Linear Regression of Analysis Sample: Effect of Condition on Trust* (published statistics: $b=1.54$, $SE=0.06$, $t=24.70$ $p<0.001$, 95\%-CI = [1.42, 1.66])
 ```{r}
-table(data_s1$att_check1 == "TikTok" & data_s1$att_check2 == "Roses can suffer with pests like aphids and blackfly") # 172 failed first attention check
-table(data_s1$att_check2 == "Roses can suffer with pests like aphids and blackfly") # 172 failed first attention check
+#model_s1_1 <- lm(trust_comb ~ cond + support + gender + age + race + education + ses2 + politics + religious + country, data = data_s1_sample) 
 
-nas_pp <- rowSums(is.na(data_s1_sample))
-table(nas_pp) # 1 person had 2 NAs
+summary(model_s1_1)
 
-table(data_s1_sample$gender) # 8686 women as in paper
-mean(data_s1_sample$age) # 41.62 as in paper
+round(confint(model_s1_1, "condRedistribution", level = 0.95), 2)
 ```
+Running the regression analysis, one can observe that there seems to be an issue with the levels of the $race$ variable. Therefore, we will code it to a binary variable which is a very common procedure.
+
 ```{r}
-model <- lm(trust_comb ~ gender + age + race + education + ses2 + politics + religious + support + country, data = data_s1_sample)
-
-summary(model)
+data_s1_sample <- data_s1_sample %>%
+  mutate(
+    race = if_else(race == "White", "White", "Other")
+    )
 ```
 
+And rerun the regression analysis
+
+```{r}
+model_s1_2 <- lm(trust_comb ~ cond + support + gender + age + race + education + ses2 + politics + religious, data = data_s1_sample) 
+
+summary(model_s1_2)
+
+round(confint(model_s1_2, "condRedistribution", level = 0.95), 2)
+```
+Still, the given statistics do not match those retrieved from this analysis. However, the values are very close to what the authors provided and significant.
+
+After inspecting Colombatto et al.'s code, we recognized they converted education to a continuous variable. We deem this transformation slightly problematic since - even though *education* has 8 levels, the levels are not necessarily equidistant, which is often listed as a requirement for such a transformation (Source). After applying this transformation we received the same results:
+```{r}
+data_s1_sample <- data_s1_sample %>%
+  mutate(education_num = as.integer(recode(education, "Some elementary school / primary school" = "1",
+                             "Completed elementary school / primary school" = "2", 
+                             "Some high school / secondary school" = "3", 
+                             "Completed high school / secondary school" = "4", 
+                             "Some college / undergraduate degree" = "5", 
+                             "Completed college / undergraduate degree" = "6", 
+                             "Some advanced postgraduate degree" = "7", 
+                             "Completed advanced postgraduate degree " = "8")))
+
+model_s1_3 <- lm(trust_comb ~ cond + support + gender + age + race + education_num + ses2 + politics + religious, data = data_s1_sample) 
+
+summary(model_s1_3)
+
+round(confint(model_s1_3, "condRedistribution", level = 0.95), 2)
+```
+This leads to the same results.
+
+*(2) Regression Analysis only applying Exclusion Criteria 1 and 3* ($b = 1.48$, $SE = 0.06$, $t = 25.89$, $p < .001$, 95\%
+CI = [1.37, 1.59])
+```{r}
+data_s1_sample_2 <- data_s1 %>%
+  # exclude individuals who took the survey more than once (either duplicate id or ip, not specified but 46x IP==1)
+  filter(duplicate_IP != 1,
+         country == survey_c) %>%
+  
+  # Dependent Variable Avg of both trust questions
+  mutate(trust_comb = (trust_1 + trust_2)/2, # form trust score as avg of both trust items
+         cond = as.factor(cond),
+         gender = as.factor(gender), # make gender a factor variable
+         race = if_else(race == "White", "White", "Other"),
+         education = as.factor(education),
+         education_num = as.integer(recode(education, "Some elementary school / primary school" = "1",
+                             "Completed elementary school / primary school" = "2", 
+                             "Some high school / secondary school" = "3", 
+                             "Completed high school / secondary school" = "4", 
+                             "Some college / undergraduate degree" = "5", 
+                             "Completed college / undergraduate degree" = "6", 
+                             "Some advanced postgraduate degree" = "7", 
+                             "Completed advanced postgraduate degree " = "8")),
+         country = as.factor(country))
+
+# With categorical education
+
+model_s1_4 <- lm(trust_comb ~ cond + support + gender + age + race + education + ses2 + politics + religious, data = data_s1_sample_2) 
+summary(model_s1_4)
+round(confint(model_s1_4, "condRedistribution", level = 0.95), 2)
+
+# With continuous education
+
+model_s1_5 <- lm(trust_comb ~ cond + support + gender + age + race + education_num + ses2 + politics + religious, data = data_s1_sample_2) 
+summary(model_s1_5)
+round(confint(model_s1_5, "condRedistribution", level = 0.95), 2)
+```
+Once again, after recoding education to a continuous variable, the results match. When keeping education categorical, the statistics again slightly deviate from the published but the effect remains significant.
+
+
+*(3) Regression Analysis for Interaction between condition and country* (all interactions $b < 0.19$, $p > 0.281$)
+
+```{r}
+model_s1_6 <- lm(trust_comb ~ cond * country, data_s1_sample)
+
+summary(model_s1_6)
+```
+The results here do not match, since  even though, in fact all $b$-values are below 0.19, the p-value of the redistributive condition with respondents living in the United Kingdom is lower than 0.281. The reason for this difference is that we did not specify a reference category for either of the two variables. One step further, the authors' statement that there are all interactions have p-values above 0.281 is not true without specifying the chose reference category.
+
+In fact, the authors chose the United States as reference category. This will be applied to validate the results.
+
+```{r}
+data_s1_sample$country <- factor(data_s1_sample$country, levels = c("United States", "Australia", 
+                                               "Canada", "United Kingdom"))
+
+model_s1_7 <- lm(trust_comb ~ cond * country, data_s1_sample)
+
+summary(model_s1_7)
+```
+Now the output matches the reported results.
+
+*(4) Regression Analysis Without Control Variables*
+
+```{r}
+model_s1_8 <- lm(trust_comb ~ cond, data = data_s1_sample) 
+summary(model_s1_8)
+round(confint(model_s1_8, "condRedistribution", level = 0.95), 2)
+```
+
+Also here the results match.
+
+```{r}
+rm(list = ls()[!ls() %in% c("data_s1", "data_s2")])
+```
+
+
+# 3. Study 2
+
+## 3.1 Descriptive Statistics
+
+### 3.1.1 Sample Size
+```{r}
+nrow(data_s2)
+```
+
+### 3.1.2 Excluded Respondents
+
+*(1) 247 respondents failed one or both attention checks*
+
+```{r}
+excluded_attcheck <- data_s2 %>%
+  filter(consent == "Yes") %>%
+  filter(att_check1 != "TikTok" |
+         att_check2 != "Roses can suffer with pests like aphids and blackfly")
+
+nrow(excluded_attcheck)
+```
+
+This alligns with the data.
+
+*(2) 56 respndents failed the comprehension check*
+
+```{r}
+excluded_compcheck <- data_s2 %>%
+  filter(consent == "Yes") %>%
+  filter(comp_check != "How much I trusted the mayor")
+
+nrow(excluded_compcheck)
+
+```
+
+Excluding duplicate entries, this also alligns with the given data.
+
+*(3) 2 respondents did not agree to the consent form*
+
+```{r}
+excluded_consent <- data_s2 %>%
+  filter(consent == "No")
+
+nrow(excluded_consent)
+```
+
+### 3.1.3 Characteristics of the Analysis Sample
+
+```{r}
+data_s2_sample <- data_s2 %>%
+  # exclude individuals who took the survey more than once (either duplicate id or ip, not specified but 46x IP==1)
+  filter(consent == "Yes",
+         att_check1 == "TikTok" &
+         att_check2 == "Roses can suffer with pests like aphids and blackfly",
+         comp_check == "How much I trusted the mayor") %>%
+  
+  # Dependent Variable Avg of both trust questions
+  mutate(trust_comb = (trust_1 + trust_2)/2, # form trust score as avg of both trust items
+         cond = as.factor(cond),
+         gender = as.factor(gender), # make gender a factor variable
+         race = if_else(race == "White", "White", "Other"),
+         education = as.factor(education),
+         education_num = as.integer(recode(education, "Some elementary school / primary school" = "1",
+                             "Completed elementary school / primary school" = "2", 
+                             "Some high school / secondary school" = "3", 
+                             "Completed high school / secondary school" = "4", 
+                             "Some college / undergraduate degree" = "5", 
+                             "Completed college / undergraduate degree" = "6", 
+                             "Some advanced postgraduate degree" = "7", 
+                             "Completed advanced postgraduate degree " = "8")))
+```
+
+## 3.2 Regression Analysis
+
+*(1) Linear Regression of Analysis Sample: Effect of Condition on Trust* (published statistics: $b=1.26$, $SE=0.16$, $t=8.06$ $p<0.001$, 95\%-CI = [0.95, 1.56])
+
+```{r}
+# With education as numerical
+model_s2_1 <- lm(trust_comb ~ cond + support + gender + age + race + education_num + ses2 + politics + religious, data = data_s2_sample) 
+
+summary(model_s2_1)
+round(confint(model_s2_1, "condRedistribution", level = 0.95), 2)
+
+# With education as categorical
+model_s2_2 <- lm(trust_comb ~ cond + support + gender + age + race + education + ses2 + politics + religious, data = data_s2_sample) 
+
+summary(model_s2_2)
+round(confint(model_s2_2, "condRedistribution", level = 0.95), 2)
+```
+
+This leads to the same results.
+
+*(2) Regression Analysis Without Exclusion Criteria* ($b = 0.98$, $SE = 0.12$, $t = 8.16$, $p < .001$, 95\%
+CI = [0.75, 1.22])
+```{r}
+data_s2_sample_2 <- data_s2 %>%
+  # exclude individuals who took the survey more than once (either duplicate id or ip, not specified but 46x IP==1)
+  filter(consent == "Yes") %>%
+  
+  # Dependent Variable Avg of both trust questions
+  mutate(trust_comb = (trust_1 + trust_2)/2, # form trust score as avg of both trust items
+         cond = as.factor(cond),
+         gender = as.factor(gender), # make gender a factor variable
+         race = if_else(race == "White", "White", "Other"),
+         education = as.factor(education),
+         education_num = as.integer(recode(education, "Some elementary school / primary school" = "1",
+                             "Completed elementary school / primary school" = "2", 
+                             "Some high school / secondary school" = "3", 
+                             "Completed high school / secondary school" = "4", 
+                             "Some college / undergraduate degree" = "5", 
+                             "Completed college / undergraduate degree" = "6", 
+                             "Some advanced postgraduate degree" = "7", 
+                             "Completed advanced postgraduate degree " = "8")))
+
+
+# With education as numerical
+model_s2_2 <- lm(trust_comb ~ cond + support + gender + age + race + education_num + ses2 + politics + religious, data = data_s2_sample_2) 
+
+summary(model_s2_2)
+round(confint(model_s2_2, "condRedistribution", level = 0.95), 2)
+
+# With education as categorical
+model_s2_3 <- lm(trust_comb ~ cond + support + gender + age + race + education + ses2 + politics + religious, data = data_s2_sample_2) 
+
+summary(model_s2_3)
+round(confint(model_s2_3, "condRedistribution", level = 0.95), 2)
+```
+Once again, after recoding education to a continuous variable, the results match. When keeping education categorical, the statistics again slightly deviate from the published but the effect remains significant.
+
+
+*(3) Regression Analysis Without Control Variables*
+
+```{r}
+model_s2_3 <- lm(trust_comb ~ cond, data = data_s2_sample) 
+summary(model_s2_3)
+round(confint(model_s2_3, "condRedistribution", level = 0.95), 2)
+```
