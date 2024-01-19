@@ -18,4 +18,6 @@ This folder includes the following files and folders:
   - (Upon running `Replication_Colombattoetal.Rmd`) **S2 - Trust YouGov**: This folder contains all documents published by Colombatto et al. on OSF. For rerunning their original analysis run and open `S2 - Analysis`
 - **Replication_Colombattoetal.Rmd**: This Rmd-file contains our attempt for verifying whether code reflects the description of the analyses in the paper. **Attention: Run this Rmd to retrieve the Data**
 
+## References
+Colombatto, C., Everett, J. A., Senn, J., Maréchal, M. A., & Crockett, M. J. (2023). Vaccine Nationalism Counterintuitively Erodes Public Trust in Leaders. Psychological Science, 34(12), 1309-1321.
 
