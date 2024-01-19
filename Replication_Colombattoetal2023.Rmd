@@ -16,10 +16,10 @@ In this project, we aim to replicate the authors' findings from Study 1 and 2. W
 
 # 1. Preparations
 
-## 1.1 Loading Required Packages
+## 1.1 Loading Required Packages (through pacman for reproducibility)
 
 ```{r}
-library(pacman)
+if (!require("pacman")) install.packages("pacman"); library("pacman")
 p_load("tidyverse", "knitr", "osfr")
 ```
 
