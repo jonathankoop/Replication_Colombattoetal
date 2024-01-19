@@ -1,7 +1,7 @@
 ---
 title: 'Replication of Colombatto et al. (2023): Vaccine Nationalism Counterintuitively
   Erodes Public Trust in Leaders'
-author: "Zhipei Wang & Jonathan Koop"
+author: "Jonathan Koop & Zhipei Wang"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -10,25 +10,36 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This Rmd-file aims to replicate the findings from Colombatto et al. (2022) who published the finding people in Australia, Canada, the United Kingdom and the United States counterintuitively trusted leaders with redistributive policies more than those with such that are of nationalistic nature. They mention to have conducted seven experiments with a total of $N=4,215$ adults leading to these findings. These experiments varied concerning their design, with nationally representative samples, expert and non-expert forecasts, and studies examining trust in the context of different diseases such as COVID-19 and H5N1 avian influenza.
+This Rmd-file aims to replicate the findings from Colombatto et al. (2023) who published the finding people in Australia, Canada, the United Kingdom and the United States counterintuitively trusted leaders with redistributive policies more than those with such that are of nationalistic nature. They mention to have conducted seven experiments with a total of $N=4,215$ adults leading to these findings. These experiments varied concerning their design, with nationally representative samples, expert and non-expert forecasts, and studies examining trust in the context of different diseases such as COVID-19 and H5N1 avian influenza.
 
-In this project, we aim to replicate the author's finding.
+In this project, we aim to replicate the authors' findings from Study 1 and 2. We additionally ran all analysis code provided by the authors and checked them for validity. This can be done by opening the respective Rmd-file in the Original_Analyses folder.
 
 # 1. Preparations
 
 ## 1.1 Loading Required Packages
 
 ```{r}
-# load libraries
 library(pacman)
-p_load("tidyverse", "knitr")
+p_load("tidyverse", "knitr", "osfr")
 ```
 
 ## 1.2 Loading the Data
 
 ```{r}
-data_s1 <- read.csv("Data/S1 - Data.csv")
-data_s2 <- read.csv("Data/S2 - Data.csv")
+if (length(dir("Original_Analysis/")) == 0) { # If no files exist in Subfolder, download
+  osf_retrieve_node("q6ej4") %>% # retrieve repository from osf
+    osf_ls_files() %>% # list files in repository
+    slice(c(4, 6)) %>% # only keep files 4 and 6 (Study 1 and 2)
+    osf_download(path = "Original_Analysis/") # Download files in Original_Analysis/
+} else {} # if files already exist, do nothing
+
+data_s1 <- read.csv("Original_Analysis/S1 - Trust/S1 - Data.csv")
+data_s2 <- read.csv("Original_Analysis/S2 - Trust YouGov/S2 - Data.csv")
+```
+
+## 1.3 Running `sessionInfo` (for Reproducibility)
+```{r}
+sessionInfo()
 ```
 
 # 2. Study 1
@@ -132,7 +143,7 @@ data_s1_sample <- data_s1 %>%
   # Dependent Variable Avg of both trust questions
   mutate(trust_comb = (trust_1 + trust_2)/2, # form trust score as avg of both trust items
          cond = as.factor(cond), # convert cond into a factor variable
-         gender = recode(gender, "Man" = "male",
+         gender = dplyr::recode(gender, "Man" = "male",
                          "Woman" = "female",
                          "Some other way" = "other"), # recode gender
          race = as.factor(race), # convert race into a factor variable
@@ -190,7 +201,7 @@ After inspecting Colombatto et al.'s code, we recognized they converted educatio
 
 ```{r}
 data_s1_sample <- data_s1_sample %>%
-  mutate(education_num = recode(education, "Some elementary school / primary school" = 1,
+  mutate(education_num = dplyr::recode(education, "Some elementary school / primary school" = 1,
                              "Completed elementary school / primary school" = 2, 
                              "Some high school / secondary school" = 3, 
                              "Completed high school / secondary school" = 4, 
@@ -223,13 +234,13 @@ data_s1_sample_2 <- data_s1 %>%
          gender = as.factor(gender), # make gender a factor variable
          race = if_else(race == "White", "White", "Other"), # make race a binary variable
          education = as.factor(education), # make education a factor variable
-         education_num = recode(education, "Some elementary school / primary school" = 1,
-                             "Completed elementary school / primary school" = 2, 
-                             "Some high school / secondary school" = 3, 
-                             "Completed high school / secondary school" = 4, 
-                             "Some college / undergraduate degree" = 5, 
-                             "Completed college / undergraduate degree" = 6, 
-                             "Some advanced postgraduate degree" = 7, 
+         education_num = dplyr::recode(education, "Some elementary school / primary school" = 1,
+                             "Completed elementary school / primary school" = 2,
+                             "Some high school / secondary school" = 3,
+                             "Completed high school / secondary school" = 4,
+                             "Some college / undergraduate degree" = 5,
+                             "Completed college / undergraduate degree" = 6,
+                             "Some advanced postgraduate degree" = 7,
                              "Completed advanced postgraduate degree " = 8,
                              "Completed advanced postgraduate degree" = 8), # also make a numerical education variable
          country = as.factor(country)) # make country a factor variable
@@ -275,8 +286,7 @@ kable(summary(model_s1_7)$coefficients) # print the summary of the model coeffic
 ```
 Now the output matches the reported results.
 
-### (4) Regression Analysis Without Control Variables (published statistics: $b = 1.54$, $SE = 0.06$,
-$t = 24.60$, $p < .001$, 95% CI = [1.41, 1.66]))
+### (4) Regression Analysis Without Control Variables (published statistics: $b = 1.54$, $SE = 0.06$, $t = 24.60$, $p < .001$, 95% CI = [1.41, 1.66]))
 
 ```{r}
 # build the model with cond (type of leader) only
@@ -287,10 +297,56 @@ round(confint(model_s1_8, "condRedistribution", level = 0.95), 2) # print the 95
 
 Also here the results match.
 
+
+## 2.3 Assumption checking (for first reproduced full model)
+### (1) Linear Regression of Analysis Sample: Effect of Condition on Trust (published statistics: $b=1.54$, $SE=0.06$, $t=24.70$ $p<0.001$, 95\%-CI = [1.42, 1.66])
+```{r }
+plot(model_s1_3)
+```
+
+
+Assumption 1: Independence of observations (i.e., independence of residuals)
+This is questionable as the Residual vs Fitted plot shows a pattern where there are two clusters of residuals and the spread of them doesn't look random.
+
+Assumption 2: Linearity of the Data
+Looking again at the Residual vs Fitted plot, the red line is approximately horizontal at zero, meaning that this assumption should be met.
+
+Assumption 3: Homoscedasticity
+Looking at the scale-location plot, the red line is approximately horizontal but the spread of the points looks questionable, which means this assumption may not be met.
+
+Assumption 4: No multicollinearity
+This can be checked by looking at the correlation matrix or calculating the variance inflation factors (VIF). The correlations between variables are not high and the VIFs are lower than 2, so there's no multicollinearity.
+
+```{r}
+data_s1_sample %>%
+  select(trust_comb, support, age, education_num, ses2, politics, religious) %>%
+  na.omit() %>%
+  cor() %>%
+  round(2)
+```
+
+
+```{r warning=FALSE, message=FALSE}
+library(car)
+vif(model_s1_3)
+```
+
+
+Assumption 5: There should be no significant outliers, high leverage points or highly influential points.
+It can be shown from the residual vs leverage plot and the cook's distance plot that there are a few potential outliers and high influential points, but there were no red dashed lines (thresholds for determining if they are extreme) in both plots, so this assumption should be met.
+```{r}
+plot(model_s1_3, 4)
+```
+
+
+Assumption 6: The residuals (errors) are approximately normally distributed. 
+The normal Q-Q plot shows that the residuals are approximately normally distributed with only some deviations at both tails.
+
 ```{r}
 # remove the objects in the r environment except for the two datasets
 rm(list = ls()[!ls() %in% c("data_s1", "data_s2")])
 ```
+
 
 # 3. Study 2
 
@@ -362,12 +418,12 @@ data_s2_sample <- data_s2 %>%
   # Dependent Variable Avg of both trust questions
   mutate(trust_comb = (trust_1 + trust_2)/2, # form trust score as avg of both trust items
          cond = as.factor(cond), # make cond a factor variable
-         gender = recode(gender, "Man" = "male",
+         gender = dplyr::recode(gender, "Man" = "male",
                          "Woman" = "female",
                          "Some other way" = "other"), # recode gender
          race = if_else(race == "White", "White", "Other"), # make race a binary variable
          education = as.factor(education), # make education a factor variable
-         education_num = recode(education, 
+         education_num = dplyr::recode(education, 
                                "Some elementary school / primary school" = 1,
                                "Completed elementary school / primary school" = 2, 
                                "Some high school / secondary school" = 3, 
@@ -416,12 +472,12 @@ data_s2_sample_2 <- data_s2 %>%
   # Dependent Variable Avg of both trust questions
   mutate(trust_comb = (trust_1 + trust_2)/2, # form trust score as avg of both trust items
          cond = as.factor(cond), # make cond a factor variable
-         gender = recode(gender, "Man" = "male",
+         gender = dplyr::recode(gender, "Man" = "male",
                          "Woman" = "female",
                          "Some other way" = "other"), # recode gender
          race = if_else(race == "White", "White", "Other"), # make race a binary variable
          education = as.factor(education), # make education a categorical variable
-         education_num = recode(education, 
+         education_num = dplyr::recode(education, 
                                "Some elementary school / primary school" = 1,
                                "Completed elementary school / primary school" = 2, 
                                "Some high school / secondary school" = 3, 
@@ -462,3 +518,49 @@ round(confint(model_s2_3, "condRedistribution", level = 0.95), 2) # print the 95
 ```
 
 Once again we retrieve the same results as reported by Colombatto et al.
+
+
+
+## 3.3 Assumption checking (for first reproduced full model)
+### (1) Linear Regression of Analysis Sample: Effect of Condition on Trust (published statistics: $b=1.26$, $SE=0.16$, $t=8.06$ $p<0.001$, 95\%-CI = [0.95, 1.56])
+```{r}
+plot(model_s2_1)
+```
+
+
+Assumption 1: Independence of observations (i.e., independence of residuals)
+This is questionable as the Residual vs Fitted plot shows a pattern where there are two clusters of residuals and the spread don't look completely random.
+
+Assumption 2: Linearity of the Data
+Looking again at the Residual vs Fitted plot, the red line is approximately horizontal at zero, meaning that this assumption should be met.
+
+Assumption 3: Homoscedasticity
+Looking at the scale-location plot, the red line is approximately horizontal but the spread of the points looks questionable, which means this assumption may not be met.
+
+Assumption 4: No multicollinearity
+This can be checked by looking at the correlation matrix or calculating the variance inflation factors (VIF). The correlations between variables are not high and the VIFs are lower than 2, so there's no multicollinearity.
+
+```{r}
+data_s2_sample %>%
+  select(trust_comb, support, age, education_num, ses2, politics, religious) %>%
+  na.omit() %>%
+  cor() %>%
+  round(2)
+```
+
+
+```{r warning=FALSE, message=FALSE}
+vif(model_s2_1)
+```
+
+
+Assumption 5: There should be no significant outliers, high leverage points or highly influential points.
+It can be shown from the residual vs leverage plot and the cook's distance plot that there are a few potential outliers and high influential points, but there were no red dashed lines (thresholds for determining if they are extreme) in both plots, so this assumption should be met.
+```{r}
+plot(model_s2_1, 4)
+```
+
+
+Assumption 6: The residuals (errors) are approximately normally distributed. 
+The normal Q-Q plot shows that the residuals are approximately normally distributed with only some deviations at both tails.
+
