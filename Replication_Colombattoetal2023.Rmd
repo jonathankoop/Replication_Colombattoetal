@@ -47,7 +47,7 @@ participants <- data_s1 %>%
 kable(participants)
 ```
 
-Summarizing the given data set, excluding duplicate entries, at first sight show that this is quite plausible as the number of participants lie near 500 for all countries. At a second sight, however, it appears that `r participants$participants[participants$country == "Canada"]` of the participants lived in Canada which is higher than the authors mentioned. A plausible explanation for this may be that some of the participants recruited for some other counties (in particular the United States) may have moved to Canada.
+Summarizing the given data set, excluding duplicate entries, at first sight, shows that this is quite plausible as the numbers of participants lie near 500 for all countries. At second sight, however, it appears that `r participants$participants[participants$country == "Canada"]` of the participants lived in Canada which is higher than the authors mentioned. A plausible explanation for this may be that some of the participants recruited for some other countries (in particular the United States) may have moved to Canada.
 
 ### 2.1.2 Excluded Respondents
 
@@ -62,9 +62,9 @@ excluded_morethanonce <- data_s1 %>%
 nrow(excluded_morethanonce)
 ```
 
-This alligns with the data.
+This aligns with the data.
 
-*(2) 245 respndents for failing one or both attention checks*
+*(2) 245 respondents for failing one or both attention checks*
 
 ```{r}
 excluded_attcheck <- data_s1 %>%
@@ -75,7 +75,7 @@ excluded_attcheck <- data_s1 %>%
 nrow(excluded_attcheck)
 ```
 
-Excluding duplicate entries, this also alligns with the given data.
+Excluding duplicate entries, this also aligns with the given data.
 
 *(3) 2 respondents reported living in another country than Australia, Canada, the United Kingdom, and the United States*
 
@@ -87,7 +87,7 @@ excluded_country <- data_s1 %>%
 nrow(excluded_country)
 ```
 
-This alligns with the data as well.
+This aligns with the data as well.
 
 *(4) 101 failed a comprehension check*
 
@@ -99,7 +99,7 @@ excluded_compcheck1 <- data_s1 %>%
 nrow(excluded_compcheck1)
 ```
 
-Out of all non-duplicate entries, the code above shows that `r nrow(excluded_compcheck1)` respondents failed the attention check, which does not allign with the number given by the authors. However, it is also plausible that the authors referred to respondents who were not removed for other reasons listed before (i.e., (1) to (3)).
+Out of all non-duplicate entries, the code above shows that `r nrow(excluded_compcheck1)` respondents failed the attention check, which does not align with the number given by the authors. However, it is also plausible that the authors referred to respondents who were not removed for other reasons listed before (i.e., (1) to (3)).
 
 ```{r}
 excluded_compcheck2 <- data_s1 %>%
@@ -150,7 +150,7 @@ Colombatto et al. published several regression analyses for the first study, whi
 ### (1) Linear Regression of Analysis Sample: Effect of Condition on Trust (published statistics: $b=1.54$, $SE=0.06$, $t=24.70$ $p<0.001$, 95\%-CI = [1.42, 1.66])
 
 After estimating a model with fixed and random effects the authors run a linear regression model with all control variables concluding with the following statement:
-"As shown in Figure 1a, leaders who endorsed vaccine redistribution were trusted more than those whoendorsed vaccine nationalism (b = 1.54, SE = 0.06, t =24.70, p < .001, 95% confidence interval (CI) = [1.42, 1.66]; mean trust for redistribution leader = 5.02 on a scale from 1 to 7, SE = 0.10 vs. mean trust for nationalism leader = 3.48, SE = 0.10)."
+"As shown in Figure 1a, leaders who endorsed vaccine redistribution were trusted more than those who endorsed vaccine nationalism (b = 1.54, SE = 0.06, t =24.70, p < .001, 95% confidence interval (CI) = [1.42, 1.66]; mean trust for redistribution leader = 5.02 on a scale from 1 to 7, SE = 0.10 vs. mean trust for nationalism leader = 3.48, SE = 0.10)."
 
 We now estimated the model drawing upon the description of the data in the paper, the preregistration and the questionnaire, which led to the following results:
 
@@ -161,7 +161,7 @@ kable(summary(model_s1_1)$coefficients)
 
 round(confint(model_s1_1, "condRedistribution", level = 0.95), 2)
 ```
-Running the regression analysis, one can observe that there seems to be an issue with the levels of the $race$ variable, which overload the model with variable due to its dummy coding. Therefore, we will code it to a binary variable which is a common procedure in research.
+Running the regression analysis, one can observe that there seems to be an issue with the levels of the $race$ variable, which overloads the model with variables due to its dummy coding. Therefore, we will code it to a binary variable which is a common procedure in research.
 
 ```{r}
 data_s1_sample <- data_s1_sample %>%
@@ -304,7 +304,7 @@ excluded_attcheck <- data_s2 %>%
 nrow(excluded_attcheck)
 ```
 
-Only looking at those respondents with consent this alligns with the data.
+Only looking at those respondents with consent this aligns with the data.
 
 *(2) 56 respondents failed the comprehension check*
 
@@ -428,7 +428,7 @@ model_s2_3 <- lm(trust_comb ~ cond + support + gender + age + race + education +
 kable(summary(model_s2_3)$coefficients)
 round(confint(model_s2_3, "condRedistribution", level = 0.95), 2)
 ```
-The results match again, when looking at education numerically. Dummy coding education again leads to very similar results
+The results match again, when looking at education numerically. Dummy coding education again leads to very similar results.
 
 
 ### (3) Regression Analysis Without Control Variables (published statistics: $b = 1.28$, $SE = 0.16$, $t = 8.25$, $p < .001$, 95% CI = [0.98, 1.59]))
@@ -439,4 +439,4 @@ kable(summary(model_s2_3)$coefficients)
 round(confint(model_s2_3, "condRedistribution", level = 0.95), 2)
 ```
 
-Once again the we retrieve the same results as reported by Colombatto et al.
+Once again we retrieve the same results as reported by Colombatto et al.
