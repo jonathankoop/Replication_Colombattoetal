@@ -13,6 +13,7 @@ As our verification target, we selected the coefficient of *condition* (national
 
 This folder includes the following files and folders:
 
+- **Poster_Replication_Colombattoetal.pdf**: The poster describing the replication
 - **Original_Analysis**: This is an empty folder in which the original analysis are to be stored upon downloading them. This is automatically done when running `Replication_Colombattoetal.Rmd`
   - (Upon running `Replication_Colombattoetal.Rmd`) **S1 - Trust**: This folder contains all documents published by Colombatto et al. on OSF. For rerunning their original analysis run and open `S1 - Analysis`
   - (Upon running `Replication_Colombattoetal.Rmd`) **S2 - Trust YouGov**: This folder contains all documents published by Colombatto et al. on OSF. For rerunning their original analysis run and open `S2 - Analysis`
