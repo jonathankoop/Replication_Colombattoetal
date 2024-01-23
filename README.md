@@ -2,7 +2,7 @@
 ## A Verification Report of Colombatto et al.’s (2023): Vaccine Nationalism Counterintuitively Erodes Public Trust in Leaders 
 
 
-**Attention: Please run Replication_Colombattoetal.Rmd first to automatically download the necessary data and to get access to the R code published by Colombatto et al.**
+**Attention: Make sure to create the empty folder `Original_Analysis` after downloading the repository. Please run Replication_Colombattoetal.Rmd first to automatically download the necessary data and to get access to the R code published by Colombatto et al.**
 
 
 This project aims to verify the analysis conducted by Colombatto et al. (2023) in their paper on the relationship of vaccine nationalism and public trust in countries' leaders. 
